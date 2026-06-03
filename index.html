@@ -85,7 +85,7 @@
         <div class="field"><label>Bairro</label><input id="m_bairro"></div>
         <div class="field"><label>Cidade</label><input id="m_cidade"></div>
       </div>
-      <div class="field" style="max-width:280px"><label>% Material (mão de obra = restante)</label><input id="m_pct" type="number" value="70" min="0" max="100"></div>
+      <div class="field" style="max-width:280px"><label>% Material (mão de obra = restante)</label><input id="m_pct" type="number" value="70" min="0" max="100" oninput="empresas.forEach((e,i)=>renderDet(i));gerar()"></div>
     </div>
 
     <div class="card">
@@ -152,16 +152,20 @@ function upImg(ev,i,c){const f=ev.target.files[0];if(!f)return;const r=new FileR
 function renderDet(i){
   const e=empresas[i], el=document.getElementById('det'+i); if(!el)return;
   if(!e.itens.length){el.innerHTML='';return;}
-  el.innerHTML=`<table><thead><tr><th>Ambiente</th><th>Serviço</th><th class="num">Valor R$</th><th></th></tr></thead><tbody>
+  const p=pctMat();
+  el.innerHTML=`<table><thead><tr><th>Ambiente</th><th>Serviço</th><th class="num">Valor R$</th><th class="num">Material (${Math.round(p*100)}%)</th><th class="num">Mão de obra (${Math.round((1-p)*100)}%)</th><th></th></tr></thead><tbody>
     ${e.itens.map((it,j)=>`<tr>
       <td><input value="${(it.ambiente||'').replace(/"/g,'&quot;')}" oninput="empresas[${i}].itens[${j}].ambiente=this.value"></td>
       <td><input value="${(it.descricao||'').replace(/"/g,'&quot;')}" oninput="empresas[${i}].itens[${j}].descricao=this.value"></td>
-      <td><input class="num" type="number" step="0.01" value="${it.valor||0}" oninput="empresas[${i}].itens[${j}].valor=Number(this.value)||0;gerar()"></td>
+      <td><input class="num" type="number" step="0.01" value="${it.valor||0}" oninput="empresas[${i}].itens[${j}].valor=Number(this.value)||0;updMM(${i},${j});gerar()"></td>
+      <td class="num" id="mat${i}_${j}">${BRL((it.valor||0)*p)}</td>
+      <td class="num" id="mo${i}_${j}">${BRL((it.valor||0)-(it.valor||0)*p)}</td>
       <td><button class="del" onclick="empresas[${i}].itens.splice(${j},1);renderDet(${i});gerar()">×</button></td>
     </tr>`).join('')}</tbody></table>
     <button class="btn ghost" style="margin-top:6px" onclick="empresas[${i}].itens.push({ambiente:'',descricao:'',valor:0});renderDet(${i})">+ item</button>`;
 }
 
+function updMM(i,j){const v=Number(empresas[i].itens[j].valor)||0;const p=pctMat();const a=document.getElementById('mat'+i+'_'+j),b=document.getElementById('mo'+i+'_'+j);if(a)a.textContent=BRL(v*p);if(b)b.textContent=BRL(v-v*p);}
 function showErr(m){const e=document.getElementById('err');e.style.display='block';e.textContent=m;}
 function clearErr(){document.getElementById('err').style.display='none';}
 
