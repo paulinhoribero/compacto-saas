@@ -1,7 +1,7 @@
 <!doctype html><html lang="pt-br"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Orçamentos — Compacto Imóveis</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
   :root{--ink:#374151;--red:#b91c1c;--line:#d8dde3;--bg:#eef1f4;--paper:#fff;--muted:#6b7280}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -256,30 +256,51 @@ function folhaHTML(emp,idx){
 }
 function gerar(){document.getElementById('saida').innerHTML=empresas.map(folhaHTML).join('');}
 
-function aoaEmpresa(e){
-  const imovel=dadosImovel(), pct=pctMat();
-  const aoa=[[e.titulo],['Orçamento para Prestação de Serviços'],[],['DADOS DO IMÓVEL'],
-    ['Data',imovel.data],['Número do Contrato',imovel.contrato],['Tipo de Imóvel',imovel.tipo],
-    ['Endereço',imovel.endereco],['Bairro',imovel.bairro],['Cidade',imovel.cidade],[],
-    ['DADOS DO PRESTADOR'],['Prestador',e.nome],[e.docLabel,e.doc],['Telefone',e.tel],[],
-    ['Ambiente/M²','Descrição','Material','Mão de obra','Total']];
-  let st=0; e.itens.forEach(it=>{const v=Number(it.valor)||0;const mat=+(v*pct).toFixed(2);st+=v;aoa.push([it.ambiente,it.descricao,mat,+(v-mat).toFixed(2),v]);});
-  const sm=+(st*pct).toFixed(2);
-  aoa.push([],['','','','TOTAL DE MATERIAL',sm],['','','','TOTAL DE MÃO DE OBRA',+(st-sm).toFixed(2)],['','','','TOTAL GERAL',st],[],['Obs.',e.prazo],['Assinatura',e.nome]);
-  return aoa;
-}
-function wsAOA(aoa){const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=[{wch:18},{wch:40},{wch:15},{wch:15},{wch:15}];return ws;}
 function abaNome(e){return e.titulo.split(' ')[0].slice(0,28);}
-function exportXLSX(){
-  const wb=XLSX.utils.book_new();
-  empresas.forEach(e=>XLSX.utils.book_append_sheet(wb,wsAOA(aoaEmpresa(e)),abaNome(e)));
-  XLSX.writeFile(wb,(dadosImovel().contrato||'orcamentos')+'_3_orcamentos.xlsx');
+function b64only(d){return (d||'').split(',')[1]||'';}
+async function baixar(wb,nome){
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=nome; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1500);
 }
-function exportEmpresa(i){
-  const e=empresas[i], wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,wsAOA(aoaEmpresa(e)),abaNome(e));
-  XLSX.writeFile(wb,(dadosImovel().contrato||'orcamento')+'_'+abaNome(e)+'.xlsx');
+function montaAba(wb,e){
+  const imovel=dadosImovel(), pct=pctMat();
+  const ws=wb.addWorksheet(abaNome(e),{views:[{showGridLines:false}]});
+  ws.columns=[{width:20},{width:42},{width:15},{width:15},{width:15}];
+  const RED='FFB91C1C',DARK='FF374151',GREY='FFF7F8FA';
+  const bd={top:{style:'thin',color:{argb:'FFC9CED4'}},left:{style:'thin',color:{argb:'FFC9CED4'}},bottom:{style:'thin',color:{argb:'FFC9CED4'}},right:{style:'thin',color:{argb:'FFC9CED4'}}};
+  const C=(r,c)=>ws.getRow(r).getCell(c);
+  // cabecalho: logo + titulo
+  ws.mergeCells(1,1,3,2); ws.mergeCells(1,3,3,5);
+  const tt=C(1,3); tt.value=e.titulo; tt.font={bold:true,size:14,color:{argb:DARK}}; tt.alignment={vertical:'middle'};
+  [1,2,3].forEach(r=>ws.getRow(r).height=22);
+  if(e.logo){const id=wb.addImage({base64:b64only(e.logo),extension:'jpeg'}); ws.addImage(id,{tl:{col:0.15,row:0.2},ext:{width:96,height:64}});}
+  ws.mergeCells(4,1,4,5); const sub=C(4,1); sub.value='Orçamento para Prestação de Serviços'; sub.font={italic:true,bold:true,color:{argb:'FF555555'}}; sub.alignment={horizontal:'center'};
+  let r=5;
+  const band=t=>{ws.mergeCells(r,1,r,5);const c=C(r,1);c.value=t;c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:DARK}};c.alignment={vertical:'middle'};ws.getRow(r).height=18;r++;};
+  const kv=(k,v)=>{ws.mergeCells(r,1,r,2);ws.mergeCells(r,3,r,5);const a=C(r,1),b=C(r,3);a.value=k;a.font={bold:true};a.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFAFBFC'}};b.value=v||'';[a,b].forEach(c=>c.border=bd);r++;};
+  band('DADOS DO IMÓVEL');
+  kv('Data:',imovel.data); kv('Número do Contrato:',imovel.contrato); kv('Tipo de Imóvel:',imovel.tipo);
+  kv('Endereço:',imovel.endereco); kv('Bairro:',imovel.bairro); kv('Cidade:',imovel.cidade);
+  band('DADOS DO PRESTADOR DE SERVIÇO');
+  kv('Prestador de Serviço:',e.nome); kv(e.docLabel+':',e.doc); kv('Telefone:',e.tel);
+  // header itens
+  ['Ambiente/M²','Descrição do serviço','Material','Mão de obra','Total'].forEach((h,i)=>{const c=C(r,i+1);c.value=h;c.font={bold:true,color:{argb:'FFFFFFFF'},size:10};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:RED}};c.alignment={horizontal:i<2?'left':'center'};c.border=bd;});
+  ws.getRow(r).height=18; r++;
+  let tot=0;
+  e.itens.forEach((it,idx)=>{const v=Number(it.valor)||0,mat=+(v*pct).toFixed(2),mo=+(v-mat).toFixed(2);tot+=v;
+    [it.ambiente||'',it.descricao||'',mat,mo,v].forEach((val,i)=>{const c=C(r,i+1);c.value=val;c.border=bd;if(i>=2){c.numFmt='"R$" #,##0.00';c.alignment={horizontal:'right'};}if(idx%2===1)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:GREY}};});r++;});
+  const sm=+(tot*pct).toFixed(2),smo=+(tot-sm).toFixed(2);
+  const total=(lbl,val,g)=>{ws.mergeCells(r,1,r,4);const a=C(r,1);a.value=lbl;a.alignment={horizontal:'right'};a.font={bold:true,size:g?12:11,color:{argb:g?RED:'FF000000'}};const b=C(r,5);b.value=val;b.numFmt='"R$" #,##0.00';b.alignment={horizontal:'right'};b.font={bold:true,size:g?12:11,color:{argb:g?RED:'FF000000'}};if(g){b.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFDECEC'}};b.border={top:{style:'medium',color:{argb:RED}},bottom:{style:'medium',color:{argb:RED}},left:{style:'medium',color:{argb:RED}},right:{style:'medium',color:{argb:RED}}};}r++;};
+  r++; total('TOTAL DE MATERIAL:',sm,false); total('TOTAL DE MÃO DE OBRA:',smo,false); total('TOTAL DE MATERIAL E MÃO DE OBRA:',tot,true);
+  r++; ws.mergeCells(r,1,r,5); const pz=C(r,1); pz.value='Informações importantes: '+(e.prazo||''); pz.font={italic:true,size:9,color:{argb:'FF555555'}}; pz.alignment={wrapText:true}; ws.getRow(r).height=30; r+=2;
+  if(e.ass){const sid=wb.addImage({base64:b64only(e.ass),extension:'jpeg'}); ws.addImage(sid,{tl:{col:1.6,row:r-1},ext:{width:150,height:46}});}
+  r+=3; ws.mergeCells(r,1,r,5); const nm=C(r,1); nm.value=e.nome||''; nm.alignment={horizontal:'center'}; nm.font={bold:true}; nm.border={top:{style:'thin',color:{argb:'FF333333'}}};
+  r++; ws.mergeCells(r,1,r,5); const lb=C(r,1); lb.value='ASSINATURA'; lb.alignment={horizontal:'center'}; lb.font={size:9,color:{argb:'FF888888'}};
 }
+async function exportXLSX(){const wb=new ExcelJS.Workbook(); empresas.forEach(e=>montaAba(wb,e)); await baixar(wb,(dadosImovel().contrato||'orcamentos')+'_3_orcamentos.xlsx');}
+async function exportEmpresa(i){const wb=new ExcelJS.Workbook(); montaAba(wb,empresas[i]); await baixar(wb,(dadosImovel().contrato||'orcamento')+'_'+abaNome(empresas[i])+'.xlsx');}
 function imprimirFolha(i){
   const sheets=[...document.querySelectorAll('#saida .sheet')];
   sheets.forEach((s,k)=>{ s.classList.toggle('np',k!==i); s.classList.toggle('solo',k===i); });
