@@ -147,6 +147,7 @@ const temV = v => Number(v)>0;
 const num = v => { if(typeof v==='number')return v; if(!v)return 0;
   let s=(''+v).replace(/[^\d.,]/g,''); if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');
   else if(s.includes(','))s=s.replace(',','.'); return Number(s)||0; };
+const n2 = n => (Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
 let empresas = [
   {key:'floriano',titulo:'FLORIANO REPAROS E MANUTENÇÃO',nome:'Sérgio Floriano',docLabel:'CNPJ',doc:'21.204.026/0001-26',tel:'17 99138-3038',prazo:'Prazo para entrega do serviço após a confirmação e entrega de chaves: 15 dias úteis.',logo:ASSETS.floriano_logo,ass:ASSETS.floriano_ass,texto:'',itens:[]},
@@ -188,7 +189,7 @@ function renderDet(i){
       <td><input value="${(it.descricao||'').replace(/"/g,'&quot;')}" oninput="empresas[${i}].itens[${j}].descricao=this.value"></td>
       <td class="num" id="mat${i}_${j}">${tem?BRL(it.valor*p):''}</td>
       <td class="num" id="mo${i}_${j}">${tem?BRL(it.valor-it.valor*p):''}</td>
-      <td><input class="num" type="number" step="0.01" placeholder="incluso" value="${tem?it.valor:''}" oninput="empresas[${i}].itens[${j}].valor=Number(this.value)||0;updMM(${i},${j});gerar()"></td>
+      <td><input class="num" type="text" inputmode="decimal" autocomplete="off" placeholder="incluso" value="${tem?n2(it.valor):''}" oninput="empresas[${i}].itens[${j}].valor=num(this.value);updMM(${i},${j});gerar()" onblur="const _v=num(this.value);this.value=_v>0?n2(_v):'';"></td>
       <td><button class="del" onclick="empresas[${i}].itens.splice(${j},1);renderDet(${i});gerar()">×</button></td>
     </tr>`;}).join('')}</tbody></table>
     <button class="btn ghost" style="margin-top:6px" onclick="empresas[${i}].itens.push({ambiente:'',descricao:'',valor:0});renderDet(${i})">+ item</button>`;
