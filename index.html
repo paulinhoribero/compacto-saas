@@ -38,6 +38,7 @@
   .det input{padding:4px 4px;font-size:11px;width:100%;min-width:0}
   .det input[type=number]{width:100%;max-width:100%;min-width:0}
   .det .num{text-align:right;white-space:normal;font-size:10.5px;word-break:break-word}
+  .det tr.sep td{padding:3px;border:none}
   .del{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer}
   .small{font-size:11px;color:var(--muted)}
   .err{background:#fbe7e0;border:1px solid var(--red);color:#7a2e10;padding:10px 12px;border-radius:8px;margin-top:10px;display:none}
@@ -56,6 +57,7 @@
   .dl td:first-child{width:34%;font-weight:bold;background:#fafbfc}
   table.items th{background:var(--red);color:#fff;font-size:11.5px;text-transform:uppercase;text-align:center;padding:7px 6px}
   table.items tr:nth-child(even) td{background:#f7f8fa}
+  table.items tr.sep td{border:none;background:#fff;padding:4px}
   .ar{text-align:right;white-space:nowrap}
   .tot td{border:none;padding:3px 8px}
   .tot .lbl{text-align:right;font-weight:bold}.tot .v{text-align:right;font-weight:bold;width:150px}
@@ -140,6 +142,7 @@ const ASSETS = {
   romao_ass:"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAcFBQYFBAcGBgYIBwcICxILCwoKCxYPEA0SGhYbGhkWGRgcICgiHB4mHhgZIzAkJiorLS4tGyIyNTEsNSgsLSz/2wBDAQcICAsJCxULCxUsHRkdLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCz/wAARCABQAI8DASIAAhEBAxEB/8QAGwABAAMBAAMAAAAAAAAAAAAAAAIDBAEFBgj/xAAzEAACAgEBBQYEBAcAAAAAAAABAgADEQQSEyExQQUiUWFxkRQyUoEGQ6HBFSMzQnKx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAAB/8QAFxEBAQEBAAAAAAAAAAAAAAAAAAERMf/aAAwDAQACEQMRAD8A+kYiICIiAiIgIiICIiAiIgIiRstSlC9jqijqTiBKCQASSAB1MzC+68jc17FZ/MsBHsvP3xJDSoWDWs1rD6jwH25QHxQf+gjXeY4L7n9pam0V74APgOMlEBERAREQESG8BJC94jnjpAZ8ZZPY5gTicBDDInYCIiAgnAyZTdqkqcVqGstPJEGT9/AesqXTWXktq2DLnK1L8o9fqP6eUB8Y+oJXRoHAODa3yD0+r7cPOTr0aLZvbWN1v1P09ByE0AADA4CICIiAiIgIiICUhjqCQpK1g4yObenlGqdhWEQ4e1tgEdPE+2ZaqhECqMADAEAqhFCqAAOQE5lgeIGPKSiBWW2dSozwZTw9Mf8AZZPE6LtrRavU2V1Wl30+UK7JyTkjgOo7vOaNRqrd6KK+7awyFUbTY8T0UeuZbM6NlliVVtZY4RF4lmOAJl3l+sH8na09J/MYd5h5A8vU+0oq7GR3NmvtfWMWDKlhyleOWF5Z85tGkoByKlB8QJB2jT16dCta4ycsSclj4k9TLZXutlso7L5E5BkwT1GDA7ERAREQEREBBIAyYnOZ9IGS8t8fpLG7qYcHJ4ZIGP8ARl+2BW1th2UAz9vGNSldmmsS1Q6MMMp5ESj+E6MUmsUgqVK7LEsMehMCC9raV7FShmvZiV2K1yQRx49B95C7VahnsrcjTkAFQOOQepbGBjBzjMz9p6urT9nisU2l9QGprr0698tskdOXr0hezrtSVo1V1jV7S2Mm1/aBwVyPmzjly585cGP8Pdmtp669xVuwKtl9Ux2ntYsWYjxHEcT7T2OqlKQdgcTxYnmT4kyYGBEW23aEREgREQEREBERAREQI2OK6y56TqDZQAnJ6zPqrEW3TI5IFlmB4EgEgfpO266iu01B95djO7r7ze3T7wLnXbrZeWRiYD2lY9xoo01lrDgblGalPrnifIS7c6jVMTe26p6VIeJ/yP7D3mlEStAiKFVeAAGAIGHT6V67LLK6tm+3577MZJ8lHIeXCbkQIuMknqTzMlEBERAREQEREBERAREQERED/9k="
 };
 const BRL = n => 'R$ '+(Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const temV = v => Number(v)>0;
 const num = v => { if(typeof v==='number')return v; if(!v)return 0;
   let s=(''+v).replace(/[^\d.,]/g,''); if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');
   else if(s.includes(','))s=s.replace(',','.'); return Number(s)||0; };
@@ -177,18 +180,20 @@ function renderDet(i){
   if(!e.itens.length){el.innerHTML='';return;}
   const p=pctMat();
   el.innerHTML=`<table><thead><tr><th>Ambiente</th><th>Serviço</th><th class="num">Material</th><th class="num">Mão de obra</th><th class="num">Total</th><th></th></tr></thead><tbody>
-    ${e.itens.map((it,j)=>`<tr>
+    ${e.itens.map((it,j)=>{const tem=temV(it.valor);
+      const sep=(j>0 && (it.ambiente||'').trim()!==(e.itens[j-1].ambiente||'').trim())?'<tr class="sep"><td colspan="6"></td></tr>':'';
+      return sep+`<tr>
       <td><input value="${(it.ambiente||'').replace(/"/g,'&quot;')}" oninput="empresas[${i}].itens[${j}].ambiente=this.value"></td>
       <td><input value="${(it.descricao||'').replace(/"/g,'&quot;')}" oninput="empresas[${i}].itens[${j}].descricao=this.value"></td>
-      <td class="num" id="mat${i}_${j}">${BRL((it.valor||0)*p)}</td>
-      <td class="num" id="mo${i}_${j}">${BRL((it.valor||0)-(it.valor||0)*p)}</td>
-      <td><input class="num" type="number" step="0.01" value="${it.valor||0}" oninput="empresas[${i}].itens[${j}].valor=Number(this.value)||0;updMM(${i},${j});gerar()"></td>
+      <td class="num" id="mat${i}_${j}">${tem?BRL(it.valor*p):''}</td>
+      <td class="num" id="mo${i}_${j}">${tem?BRL(it.valor-it.valor*p):''}</td>
+      <td><input class="num" type="number" step="0.01" placeholder="incluso" value="${tem?it.valor:''}" oninput="empresas[${i}].itens[${j}].valor=Number(this.value)||0;updMM(${i},${j});gerar()"></td>
       <td><button class="del" onclick="empresas[${i}].itens.splice(${j},1);renderDet(${i});gerar()">×</button></td>
-    </tr>`).join('')}</tbody></table>
+    </tr>`;}).join('')}</tbody></table>
     <button class="btn ghost" style="margin-top:6px" onclick="empresas[${i}].itens.push({ambiente:'',descricao:'',valor:0});renderDet(${i})">+ item</button>`;
 }
 
-function updMM(i,j){const v=Number(empresas[i].itens[j].valor)||0;const p=pctMat();const a=document.getElementById('mat'+i+'_'+j),b=document.getElementById('mo'+i+'_'+j);if(a)a.textContent=BRL(v*p);if(b)b.textContent=BRL(v-v*p);}
+function updMM(i,j){const v=Number(empresas[i].itens[j].valor)||0;const p=pctMat();const a=document.getElementById('mat'+i+'_'+j),b=document.getElementById('mo'+i+'_'+j);const tem=v>0;if(a)a.textContent=tem?BRL(v*p):'';if(b)b.textContent=tem?BRL(v-v*p):'';}
 function showErr(m){const e=document.getElementById('err');e.style.display='block';e.textContent=m;}
 function clearErr(){document.getElementById('err').style.display='none';}
 
@@ -200,7 +205,7 @@ async function organizarIA(){
   document.getElementById('status').textContent='';
 
   const prompt=`Você organiza orçamentos de reparos enviados de forma desorganizada (mensagens de WhatsApp).
-REGRAS: extraia SOMENTE o que está em cada texto; não invente serviços nem valores; NÃO copie valores de uma empresa para outra; se um valor não estiver claro, use 0.
+REGRAS: extraia SOMENTE o que está em cada texto, na ORDEM em que aparece; não invente serviços nem valores; NÃO copie valores de uma empresa para outra. Repita o nome do ambiente (cômodo: Cozinha, Sala, Quarto, etc.) em CADA serviço daquele bloco.
 
 DADOS DO IMÓVEL (texto livre): """${m_texto.value||''}"""
 
@@ -208,7 +213,7 @@ EMPRESA 1 (${empresas[0].titulo}): """${empresas[0].texto||'(vazio)'}"""
 EMPRESA 2 (${empresas[1].titulo}): """${empresas[1].texto||'(vazio)'}"""
 EMPRESA 3 (${empresas[2].titulo}): """${empresas[2].texto||'(vazio)'}"""
 
-Para cada empresa, gere a lista de itens {ambiente, descricao, valor}. "valor" é o valor TOTAL do item em reais, como número puro (ex.: 1200.50), sem "R$" e sem separador de milhar. Se a empresa estiver vazia, retorne itens: [].
+Para cada empresa, gere a lista de itens {ambiente, descricao, valor}, UM item por serviço. "valor": coloque o preço em reais APENAS no serviço em que o prestador informou um preço (número puro, ex.: 1200.50, sem "R$" nem separador de milhar). Se o serviço NÃO tem preço, use 0 — significa que ele está INCLUSO no preço dos outros serviços do mesmo ambiente (não invente nem distribua valores). Linhas tipo "total: R$ X" são conferência do prestador: NÃO crie item para elas. Se a empresa estiver vazia, retorne itens: [].
 Do texto do imóvel, extraia data, contrato, tipo, endereco, bairro, cidade (o que houver; senão "").
 Responda SOMENTE com JSON válido, sem markdown:
 {"imovel":{"data":"","contrato":"","tipo":"","endereco":"","bairro":"","cidade":""},"empresas":[{"itens":[{"ambiente":"","descricao":"","valor":0}]},{"itens":[]},{"itens":[]}]}`;
@@ -244,9 +249,12 @@ function pctMat(){return (Number(m_pct.value)||70)/100;}
 
 function folhaHTML(emp,idx){
   const imovel=dadosImovel(), pct=pctMat();
-  let linhas='',somaTot=0;
-  emp.itens.forEach(it=>{const v=Number(it.valor)||0;const mat=+(v*pct).toFixed(2);const mo=+(v-mat).toFixed(2);somaTot+=v;
-    linhas+=`<tr><td>${it.ambiente||''}</td><td>${it.descricao||''}</td><td class="ar">${BRL(mat)}</td><td class="ar">${BRL(mo)}</td><td class="ar">${BRL(v)}</td></tr>`;});
+  let linhas='',somaTot=0,ambAnt=null;
+  emp.itens.forEach(it=>{const v=Number(it.valor)||0;somaTot+=v;const amb=(it.ambiente||'').trim();
+    if(ambAnt!==null && amb!==ambAnt) linhas+='<tr class="sep"><td colspan="5"></td></tr>';
+    ambAnt=amb; const tem=v>0;
+    const mat=tem?BRL(+(v*pct).toFixed(2)):'', mo=tem?BRL(+(v-v*pct).toFixed(2)):'', tt=tem?BRL(v):'';
+    linhas+=`<tr><td>${it.ambiente||''}</td><td>${it.descricao||''}</td><td class="ar">${mat}</td><td class="ar">${mo}</td><td class="ar">${tt}</td></tr>`;});
   const somaMat=+(somaTot*pct).toFixed(2), somaMo=+(somaTot-somaMat).toFixed(2);
   return `<div class="sheet">
     <div class="head"><img src="${emp.logo}"><div class="tt">${emp.titulo}</div></div>
@@ -306,9 +314,13 @@ function montaAba(wb,e){
   // header itens
   ['Ambiente/M²','Descrição do serviço','Material','Mão de obra','Total'].forEach((h,i)=>{const c=C(r,i+1);c.value=h;c.font={bold:true,color:{argb:'FFFFFFFF'},size:10};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:RED}};c.alignment={horizontal:i<2?'left':'center'};c.border=bd;});
   ws.getRow(r).height=18; r++;
-  let tot=0;
-  e.itens.forEach((it,idx)=>{const v=Number(it.valor)||0,mat=+(v*pct).toFixed(2),mo=+(v-mat).toFixed(2);tot+=v;
-    [it.ambiente||'',it.descricao||'',mat,mo,v].forEach((val,i)=>{const c=C(r,i+1);c.value=val;c.border=bd;if(i>=2){c.numFmt='"R$" #,##0.00';c.alignment={horizontal:'right'};}if(idx%2===1)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:GREY}};});r++;});
+  let tot=0, ambAnt=null, k=0;
+  e.itens.forEach((it)=>{const v=Number(it.valor)||0,mat=+(v*pct).toFixed(2),mo=+(v-mat).toFixed(2);tot+=v;
+    const amb=(it.ambiente||'').trim();
+    if(ambAnt!==null && amb!==ambAnt){ ws.getRow(r).height=6; r++; }
+    ambAnt=amb; const tem=v>0;
+    [it.ambiente||'',it.descricao||'', tem?mat:'', tem?mo:'', tem?v:''].forEach((val,i)=>{const c=C(r,i+1);c.value=val;c.border=bd;if(i>=2){if(tem)c.numFmt='"R$" #,##0.00';c.alignment={horizontal:'right'};}if(k%2===1)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:GREY}};});
+    k++; r++;});
   const sm=+(tot*pct).toFixed(2),smo=+(tot-sm).toFixed(2);
   const total=(lbl,val,g)=>{ws.mergeCells(r,1,r,4);const a=C(r,1);a.value=lbl;a.alignment={horizontal:'right'};a.font={bold:true,size:g?12:11,color:{argb:g?RED:'FF000000'}};const b=C(r,5);b.value=val;b.numFmt='"R$" #,##0.00';b.alignment={horizontal:'right'};b.font={bold:true,size:g?12:11,color:{argb:g?RED:'FF000000'}};if(g){b.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFDECEC'}};b.border={top:{style:'medium',color:{argb:RED}},bottom:{style:'medium',color:{argb:RED}},left:{style:'medium',color:{argb:RED}},right:{style:'medium',color:{argb:RED}}};}r++;};
   r++; total('TOTAL DE MATERIAL:',sm,false); total('TOTAL DE MÃO DE OBRA:',smo,false); total('TOTAL DE MATERIAL E MÃO DE OBRA:',tot,true);
