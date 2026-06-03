@@ -56,7 +56,8 @@
   table.s td,table.s th{border:1px solid #c9ced4;padding:5px 8px}
   .dl td:first-child{width:34%;font-weight:bold;background:#fafbfc}
   table.items th{background:var(--red);color:#fff;font-size:11.5px;text-transform:uppercase;text-align:center;padding:7px 6px}
-  table.items tr:nth-child(even) td{background:#f7f8fa}
+  table.items tr.ac td{background:#eef2f7}
+  table.items tr.ac td:first-child{border-left:4px solid #6b8bb0;color:#3a5573;font-weight:bold}
   table.items tr.sep td{border:none;background:#fff;padding:4px}
   .ar{text-align:right;white-space:nowrap}
   .tot td{border:none;padding:3px 8px}
@@ -249,12 +250,12 @@ function pctMat(){return (Number(m_pct.value)||70)/100;}
 
 function folhaHTML(emp,idx){
   const imovel=dadosImovel(), pct=pctMat();
-  let linhas='',somaTot=0,ambAnt=null;
+  let linhas='',somaTot=0,ambAnt=null,ai=-1;
   emp.itens.forEach(it=>{const v=Number(it.valor)||0;somaTot+=v;const amb=(it.ambiente||'').trim();
-    if(ambAnt!==null && amb!==ambAnt) linhas+='<tr class="sep"><td colspan="5"></td></tr>';
-    ambAnt=amb; const tem=v>0;
+    if(amb!==ambAnt){ if(ambAnt!==null) linhas+='<tr class="sep"><td colspan="5"></td></tr>'; ai++; ambAnt=amb; }
+    const on=ai%2===0, tem=v>0;
     const mat=tem?BRL(+(v*pct).toFixed(2)):'', mo=tem?BRL(+(v-v*pct).toFixed(2)):'', tt=tem?BRL(v):'';
-    linhas+=`<tr><td>${it.ambiente||''}</td><td>${it.descricao||''}</td><td class="ar">${mat}</td><td class="ar">${mo}</td><td class="ar">${tt}</td></tr>`;});
+    linhas+=`<tr${on?' class="ac"':''}><td>${it.ambiente||''}</td><td>${it.descricao||''}</td><td class="ar">${mat}</td><td class="ar">${mo}</td><td class="ar">${tt}</td></tr>`;});
   const somaMat=+(somaTot*pct).toFixed(2), somaMo=+(somaTot-somaMat).toFixed(2);
   return `<div class="sheet">
     <div class="head"><img src="${emp.logo}"><div class="tt">${emp.titulo}</div></div>
@@ -314,13 +315,14 @@ function montaAba(wb,e){
   // header itens
   ['Ambiente/M²','Descrição do serviço','Material','Mão de obra','Total'].forEach((h,i)=>{const c=C(r,i+1);c.value=h;c.font={bold:true,color:{argb:'FFFFFFFF'},size:10};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:RED}};c.alignment={horizontal:i<2?'left':'center'};c.border=bd;});
   ws.getRow(r).height=18; r++;
-  let tot=0, ambAnt=null, k=0;
+  let tot=0, ambAnt=null, ai=-1; const AFILL='FFEEF2F7', AINK='FF3A5573', ABAR='FF6B8BB0';
   e.itens.forEach((it)=>{const v=Number(it.valor)||0,mat=+(v*pct).toFixed(2),mo=+(v-mat).toFixed(2);tot+=v;
     const amb=(it.ambiente||'').trim();
-    if(ambAnt!==null && amb!==ambAnt){ ws.getRow(r).height=6; r++; }
-    ambAnt=amb; const tem=v>0;
-    [it.ambiente||'',it.descricao||'', tem?mat:'', tem?mo:'', tem?v:''].forEach((val,i)=>{const c=C(r,i+1);c.value=val;c.border=bd;if(i>=2){if(tem)c.numFmt='"R$" #,##0.00';c.alignment={horizontal:'right'};}if(k%2===1)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:GREY}};});
-    k++; r++;});
+    if(amb!==ambAnt){ if(ambAnt!==null){ ws.getRow(r).height=6; r++; } ai++; ambAnt=amb; }
+    const on=ai%2===0, tem=v>0;
+    [it.ambiente||'',it.descricao||'', tem?mat:'', tem?mo:'', tem?v:''].forEach((val,i)=>{const c=C(r,i+1);c.value=val;c.border=bd;if(i>=2){if(tem)c.numFmt='"R$" #,##0.00';c.alignment={horizontal:'right'};}if(on)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:AFILL}};});
+    if(on){const a1=C(r,1);a1.font={color:{argb:AINK},bold:true};a1.border={top:bd.top,bottom:bd.bottom,right:bd.right,left:{style:'medium',color:{argb:ABAR}}};}
+    r++;});
   const sm=+(tot*pct).toFixed(2),smo=+(tot-sm).toFixed(2);
   const total=(lbl,val,g)=>{ws.mergeCells(r,1,r,4);const a=C(r,1);a.value=lbl;a.alignment={horizontal:'right'};a.font={bold:true,size:g?12:11,color:{argb:g?RED:'FF000000'}};const b=C(r,5);b.value=val;b.numFmt='"R$" #,##0.00';b.alignment={horizontal:'right'};b.font={bold:true,size:g?12:11,color:{argb:g?RED:'FF000000'}};if(g){b.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFDECEC'}};b.border={top:{style:'medium',color:{argb:RED}},bottom:{style:'medium',color:{argb:RED}},left:{style:'medium',color:{argb:RED}},right:{style:'medium',color:{argb:RED}}};}r++;};
   r++; total('TOTAL DE MATERIAL:',sm,false); total('TOTAL DE MÃO DE OBRA:',smo,false); total('TOTAL DE MATERIAL E MÃO DE OBRA:',tot,true);
