@@ -65,6 +65,7 @@
   .sign .lb{font-size:10px;color:#888;letter-spacing:.1em}
   @media(max-width:760px){.grid3,.grid2{grid-template-columns:1fr}}
   @media print{body{background:#fff;padding:0}.noprint{display:none!important}
+    .sheet.np{display:none!important}.sheet.solo{page-break-after:auto!important}
     .sheet{border:none;border-radius:0;margin:0;max-width:none;padding:14mm 12mm;page-break-after:always}
     .sheet:last-child{page-break-after:auto}}
 </style></head>
@@ -102,11 +103,13 @@
 
     <div class="actions" style="margin-bottom:24px">
       <button class="btn dark" onclick="gerar()">Atualizar folhas</button>
-      <button class="btn red" onclick="window.print()">Imprimir / Salvar PDF</button>
-      <button class="btn grn" onclick="exportXLSX()">Baixar Excel</button>
     </div>
   </div>
   <div id="saida"></div>
+  <div class="actions noprint" style="max-width:780px;margin:0 auto 40px">
+    <button class="btn red" onclick="window.print()">Imprimir todas</button>
+    <button class="btn grn" onclick="exportXLSX()">Baixar Excel (3 abas)</button>
+  </div>
 </div>
 
 <script>
@@ -221,7 +224,7 @@ Responda SOMENTE com JSON válido, sem markdown:
 function dadosImovel(){return {data:m_data.value,contrato:m_contrato.value,tipo:m_tipo.value,endereco:m_endereco.value,bairro:m_bairro.value,cidade:m_cidade.value};}
 function pctMat(){return (Number(m_pct.value)||70)/100;}
 
-function folhaHTML(emp){
+function folhaHTML(emp,idx){
   const imovel=dadosImovel(), pct=pctMat();
   let linhas='',somaTot=0;
   emp.itens.forEach(it=>{const v=Number(it.valor)||0;const mat=+(v*pct).toFixed(2);const mo=+(v-mat).toFixed(2);somaTot+=v;
@@ -245,25 +248,44 @@ function folhaHTML(emp){
       <tr class="grand"><td class="lbl">TOTAL DE MATERIAL E MÃO DE OBRA:</td><td class="v">${BRL(somaTot)}</td></tr></table>
     <div class="prazo">Informações importantes: ${emp.prazo||''}</div>
     <div class="sign"><img src="${emp.ass}"><div class="nm">${emp.nome||''}</div><div class="lb">ASSINATURA</div></div>
+  </div>
+  <div class="actions noprint" style="max-width:780px;margin:8px auto 30px">
+    <button class="btn red" onclick="imprimirFolha(${idx})">Imprimir esta folha</button>
+    <button class="btn grn" onclick="exportEmpresa(${idx})">Baixar Excel</button>
   </div>`;
 }
 function gerar(){document.getElementById('saida').innerHTML=empresas.map(folhaHTML).join('');}
 
+function aoaEmpresa(e){
+  const imovel=dadosImovel(), pct=pctMat();
+  const aoa=[[e.titulo],['Orçamento para Prestação de Serviços'],[],['DADOS DO IMÓVEL'],
+    ['Data',imovel.data],['Número do Contrato',imovel.contrato],['Tipo de Imóvel',imovel.tipo],
+    ['Endereço',imovel.endereco],['Bairro',imovel.bairro],['Cidade',imovel.cidade],[],
+    ['DADOS DO PRESTADOR'],['Prestador',e.nome],[e.docLabel,e.doc],['Telefone',e.tel],[],
+    ['Ambiente/M²','Descrição','Material','Mão de obra','Total']];
+  let st=0; e.itens.forEach(it=>{const v=Number(it.valor)||0;const mat=+(v*pct).toFixed(2);st+=v;aoa.push([it.ambiente,it.descricao,mat,+(v-mat).toFixed(2),v]);});
+  const sm=+(st*pct).toFixed(2);
+  aoa.push([],['','','','TOTAL DE MATERIAL',sm],['','','','TOTAL DE MÃO DE OBRA',+(st-sm).toFixed(2)],['','','','TOTAL GERAL',st],[],['Obs.',e.prazo],['Assinatura',e.nome]);
+  return aoa;
+}
+function wsAOA(aoa){const ws=XLSX.utils.aoa_to_sheet(aoa);ws['!cols']=[{wch:18},{wch:40},{wch:15},{wch:15},{wch:15}];return ws;}
+function abaNome(e){return e.titulo.split(' ')[0].slice(0,28);}
 function exportXLSX(){
-  const imovel=dadosImovel(), pct=pctMat(); const wb=XLSX.utils.book_new();
-  empresas.forEach(e=>{
-    const aoa=[[e.titulo],['Orçamento para Prestação de Serviços'],[],['DADOS DO IMÓVEL'],
-      ['Data',imovel.data],['Número do Contrato',imovel.contrato],['Tipo de Imóvel',imovel.tipo],
-      ['Endereço',imovel.endereco],['Bairro',imovel.bairro],['Cidade',imovel.cidade],[],
-      ['DADOS DO PRESTADOR'],['Prestador',e.nome],[e.docLabel,e.doc],['Telefone',e.tel],[],
-      ['Ambiente/M²','Descrição','Material','Mão de obra','Total']];
-    let st=0; e.itens.forEach(it=>{const v=Number(it.valor)||0;const mat=+(v*pct).toFixed(2);st+=v;aoa.push([it.ambiente,it.descricao,mat,+(v-mat).toFixed(2),v]);});
-    const sm=+(st*pct).toFixed(2);
-    aoa.push([],['','','','TOTAL DE MATERIAL',sm],['','','','TOTAL DE MÃO DE OBRA',+(st-sm).toFixed(2)],['','','','TOTAL GERAL',st],[],['Obs.',e.prazo],['Assinatura',e.nome]);
-    const ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:18},{wch:40},{wch:15},{wch:15},{wch:15}];
-    XLSX.utils.book_append_sheet(wb,ws,e.titulo.split(' ')[0].slice(0,28));
-  });
-  XLSX.writeFile(wb,(imovel.contrato||'orcamentos')+'_3_orcamentos.xlsx');
+  const wb=XLSX.utils.book_new();
+  empresas.forEach(e=>XLSX.utils.book_append_sheet(wb,wsAOA(aoaEmpresa(e)),abaNome(e)));
+  XLSX.writeFile(wb,(dadosImovel().contrato||'orcamentos')+'_3_orcamentos.xlsx');
+}
+function exportEmpresa(i){
+  const e=empresas[i], wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,wsAOA(aoaEmpresa(e)),abaNome(e));
+  XLSX.writeFile(wb,(dadosImovel().contrato||'orcamento')+'_'+abaNome(e)+'.xlsx');
+}
+function imprimirFolha(i){
+  const sheets=[...document.querySelectorAll('#saida .sheet')];
+  sheets.forEach((s,k)=>{ s.classList.toggle('np',k!==i); s.classList.toggle('solo',k===i); });
+  const cleanup=()=>{ sheets.forEach(s=>{s.classList.remove('np');s.classList.remove('solo');}); window.removeEventListener('afterprint',cleanup); };
+  window.addEventListener('afterprint',cleanup);
+  window.print();
 }
 renderEmpresas(); gerar();
 </script>
