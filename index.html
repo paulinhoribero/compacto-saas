@@ -30,10 +30,11 @@
   .empresa h3{font-size:13px;color:var(--ink);margin-bottom:8px}
   .det{margin-top:10px}
   .det table{width:100%;border-collapse:collapse}
-  .det th{font-size:10px;text-transform:uppercase;color:var(--muted);text-align:left;padding:3px 3px}
+  .det th{font-size:9.5px;text-transform:uppercase;color:var(--muted);text-align:left;padding:3px 3px;white-space:nowrap}
   .det td{padding:2px}
-  .det input{padding:5px 6px;font-size:13px}
-  .det .num{text-align:right}
+  .det input{padding:4px 5px;font-size:12px;width:100%}
+  .det input[type=number]{width:74px;max-width:74px}
+  .det .num{text-align:right;white-space:nowrap;font-size:12px}
   .del{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer}
   .small{font-size:11px;color:var(--muted)}
   .err{background:#fbe7e0;border:1px solid var(--red);color:#7a2e10;padding:10px 12px;border-radius:8px;margin-top:10px;display:none}
@@ -62,6 +63,7 @@
   .sign img{height:48px;object-fit:contain;display:block;margin:0 auto 2px}
   .sign .nm{font-weight:bold;border-top:1px solid #333;display:inline-block;padding-top:3px;min-width:240px}
   .sign .lb{font-size:10px;color:#888;letter-spacing:.1em}
+  @media(max-width:760px){.grid3,.grid2{grid-template-columns:1fr}}
   @media print{body{background:#fff;padding:0}.noprint{display:none!important}
     .sheet{border:none;border-radius:0;margin:0;max-width:none;padding:14mm 12mm;page-break-after:always}
     .sheet:last-child{page-break-after:auto}}
@@ -153,13 +155,13 @@ function renderDet(i){
   const e=empresas[i], el=document.getElementById('det'+i); if(!el)return;
   if(!e.itens.length){el.innerHTML='';return;}
   const p=pctMat();
-  el.innerHTML=`<table><thead><tr><th>Ambiente</th><th>Serviço</th><th class="num">Valor R$</th><th class="num">Material (${Math.round(p*100)}%)</th><th class="num">Mão de obra (${Math.round((1-p)*100)}%)</th><th></th></tr></thead><tbody>
+  el.innerHTML=`<table><thead><tr><th>Ambiente</th><th>Serviço</th><th class="num">Material</th><th class="num">Mão de obra</th><th class="num">Total</th><th></th></tr></thead><tbody>
     ${e.itens.map((it,j)=>`<tr>
       <td><input value="${(it.ambiente||'').replace(/"/g,'&quot;')}" oninput="empresas[${i}].itens[${j}].ambiente=this.value"></td>
       <td><input value="${(it.descricao||'').replace(/"/g,'&quot;')}" oninput="empresas[${i}].itens[${j}].descricao=this.value"></td>
-      <td><input class="num" type="number" step="0.01" value="${it.valor||0}" oninput="empresas[${i}].itens[${j}].valor=Number(this.value)||0;updMM(${i},${j});gerar()"></td>
       <td class="num" id="mat${i}_${j}">${BRL((it.valor||0)*p)}</td>
       <td class="num" id="mo${i}_${j}">${BRL((it.valor||0)-(it.valor||0)*p)}</td>
+      <td><input class="num" type="number" step="0.01" value="${it.valor||0}" oninput="empresas[${i}].itens[${j}].valor=Number(this.value)||0;updMM(${i},${j});gerar()"></td>
       <td><button class="del" onclick="empresas[${i}].itens.splice(${j},1);renderDet(${i});gerar()">×</button></td>
     </tr>`).join('')}</tbody></table>
     <button class="btn ghost" style="margin-top:6px" onclick="empresas[${i}].itens.push({ambiente:'',descricao:'',valor:0});renderDet(${i})">+ item</button>`;
