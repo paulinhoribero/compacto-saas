@@ -16,8 +16,8 @@
   input,textarea{width:100%;border:1px solid var(--line);border-radius:7px;padding:9px 10px;font:inherit}
   textarea{resize:vertical;min-height:150px;line-height:1.45}
   input:focus,textarea:focus{outline:none;border-color:var(--red)}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
   .field{margin-bottom:12px}
   button.btn{font:inherit;font-weight:bold;cursor:pointer;border:none;border-radius:9px;padding:11px 18px}
   .btn.dark{background:var(--ink);color:#fff}.btn.red{background:var(--red);color:#fff}
@@ -25,16 +25,19 @@
   .btn.grn{background:#15803d;color:#fff}.btn.ai{background:#6d28d9;color:#fff}
   .btn:disabled{opacity:.55;cursor:wait}
   .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
-  .empresa{border:1px solid var(--line);border-radius:10px;padding:14px}
+  .empresa{border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
   .empresa .logo{height:42px;object-fit:contain;margin-bottom:6px}
   .empresa h3{font-size:13px;color:var(--ink);margin-bottom:8px}
-  .det{margin-top:10px}
-  .det table{width:100%;border-collapse:collapse}
-  .det th{font-size:9.5px;text-transform:uppercase;color:var(--muted);text-align:left;padding:3px 3px;white-space:nowrap}
+  .det{margin-top:10px;min-width:0}
+  .det table{width:100%;border-collapse:collapse;table-layout:fixed}
+  .det th:nth-child(1),.det td:nth-child(1){width:15%}
+  .det th:nth-child(3),.det td:nth-child(3),.det th:nth-child(4),.det td:nth-child(4),.det th:nth-child(5),.det td:nth-child(5){width:16%}
+  .det th:nth-child(6),.det td:nth-child(6){width:20px;text-align:center}
+  .det th{font-size:9px;text-transform:uppercase;color:var(--muted);text-align:left;padding:3px 2px;white-space:normal;line-height:1.1;word-break:break-word}
   .det td{padding:2px}
-  .det input{padding:4px 5px;font-size:12px;width:100%}
-  .det input[type=number]{width:74px;max-width:74px}
-  .det .num{text-align:right;white-space:nowrap;font-size:12px}
+  .det input{padding:4px 4px;font-size:11px;width:100%;min-width:0}
+  .det input[type=number]{width:100%;max-width:100%;min-width:0}
+  .det .num{text-align:right;white-space:normal;font-size:10.5px;word-break:break-word}
   .del{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer}
   .small{font-size:11px;color:var(--muted)}
   .err{background:#fbe7e0;border:1px solid var(--red);color:#7a2e10;padding:10px 12px;border-radius:8px;margin-top:10px;display:none}
